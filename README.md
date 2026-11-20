@@ -1,73 +1,92 @@
 # Tréner Hovorov
 
-Slovak private sales-practice client built with React, TypeScript, Vite, Tailwind and shadcn/ui. This delivery is a browser-local implementation, **not the complete production/server architecture requested in the original specification**.
+Private Slovak sales-practice application built with React, TypeScript, Vite, Tailwind, shadcn/ui and Supabase.
 
-## Implemented
+## Current delivery
 
-- Slovak UI, dark default and optional light theme, responsive sidebar and all primary navigation destinations.
-- Business and product CRUD, confirmed business facts, customer-known product facts, separate internal product information.
-- 16 lead intents, 19 dynamic scenario presets, independent difficulty/rudeness controls.
-- Actual Ollama model discovery and structured persona generation, customer turns and separate evaluation requests. No scripted replacement replies or fabricated metrics.
-- Customer simulator does not receive scoring rubrics, reports or private product fields. Scenario persona is hidden from the live UI except for public background.
-- Persisted text turns, elapsed call duration, manual pause/resume, interrupted-session continuation, explicit retry on provider errors.
-- Optional browser speech recognition with sk-SK requested, and synthesis limited to system voices declaring a Slovak language tag. Explicit consent is required. Browser speech services may send audio externally.
-- Real microphone permission and level test using local Web Audio processing, without recording or uploading test audio.
-- Fifteen-category model evaluation with versioned rubric, model identifier, literal transcript-evidence validation, nullable unavailable categories, actionable practice links.
-- Call reports and timestamped transcripts; history search/filter/sort/compare/delete; JSON and CSV exports.
-- Analytics generated only from persisted calls, sample-size warnings, difficulty filter, raw scores and separately labelled experimental adjustment.
-- Coaching skill profile calculated from actual reports, optional Ollama-generated persistent weekly plan.
-- Unit tests and persistence/provider integration tests. These do not certify real microphone, browser speech, model quality or mobile HTTPS operation.
+The application now uses **private email/password authentication and a synchronized Supabase PostgreSQL workspace**, replacing the original browser-only workspace. This is not the entire original production specification. Paid cloud AI and a complete remote voice service remain disabled/unimplemented.
 
-## First use on Windows in the Dyad preview
+Implemented application features include business/product management, scenario setup and presets, the existing Ollama conversation connector, consented browser speech, microphone testing, transcript-based evidence-checked reports, history, analytics, coaching plans and JSON/CSV exports. Analytics contain no seeded calls or fabricated performance data.
 
-1. Open **Moje podnikanie**, add confirmed business information and save it. Add a product under **Produkty a ponuky** if needed. Unknown prices and guarantees should remain empty.
-2. Install Ollama for Windows from its official website. Add a locally runnable model with structured JSON output support using your preferred Ollama model-management interface. No particular model has been verified on the user's hardware.
-3. Allow only the exact application origin in the Windows `OLLAMA_ORIGINS` environment variable and reopen Ollama so its process receives the updated environment. Avoid wildcard origins. The application deliberately has no public generic proxy.
-4. In **Nastavenia**, enter the private Ollama origin, use **Overiť pripojenie a načítať modely**, select a model and save. Browser CORS, mixed-content and private-network restrictions can block the connection; a successful network connection does not verify Slovak language quality.
-5. Use **Otestovať mikrofón**. If speech services are acceptable, explicitly enable them, choose an available Slovak-labelled voice, listen to the sample and save settings. If no Slovak voice is exposed by the browser, voice mode is unavailable; the app will not substitute an unrelated language silently.
-6. Create a scenario under **Nový hovor**. In the live screen, enable voice and press the microphone or play the customer's opening. Voice turns use browser STT, Ollama, then browser TTS. Manual microphone activation can interrupt synthesized speech. This is not streaming full-duplex audio or automatic barge-in.
-7. End the call, generate the report, then review history, analytics and coaching. If evaluation fails literal-evidence validation, retry; the transcript stays saved.
-8. Export backups regularly. Browser storage is not an archival database and is removed when site data is cleared.
+### Private access
 
-## Hardware and cost
+- `/prihlasenie`: email/password sign-in; no public sign-up UI.
+- `/auth/callback`: public authentication return route.
+- `/reset-password`: public recovery-session handling and password update.
+- All training routes require both a valid session and approval in `public.private_owner`.
+- No profile table is needed: this single-user setup stores no additional names, avatars or roles.
+- `private_owner` permits at most one approved user, enforced by a unique singleton constraint. Users cannot approve themselves.
+- `training_workspace` is readable only by its approved owner. Clients have no direct INSERT/UPDATE/DELETE grants.
+- `save_training_workspace` verifies the authenticated caller, checks owner approval and atomically compares the expected revision before writing. Anonymous invocation is denied. A stale revision produces a conflict instead of an unconditional overwrite.
+- Supabase Data API grants and RLS are separate protection layers. Both are required and configured; database changes were applied through the connected database tooling, not manually authored migration files.
 
-The target computer has roughly 14 GB RAM, 4 GB graphics memory and a weak CPU. Low latency is not promised. Small quantized models may fit but need actual Slovak-quality testing. Model requests have a three-minute timeout and errors remain visible. Ollama inference has no per-token API fee; electricity, hardware and model licenses still apply. No software session quota or billing is implemented. Browser storage and hardware capacity are finite.
+## Activate your private account
 
-## Privacy and deployment boundaries
+An administrator must complete these steps in the connected Supabase dashboard. No account or password is automatically fabricated.
 
-Training data is currently serialized into this origin's `localStorage`. It is **not SQLite**, not encrypted at rest, not automatically synchronized between devices and not protected by an application login. Do not publish this version as an authenticated private service. Local browser extensions or scripts with same-origin access can read local data. Use a trusted device and browser profile.
+1. Open **Authentication → Users → Add user → Create new user**. Use your own email and a strong unique password. For an administrator-created account, confirm the email using the available dashboard option, or complete the intended email-confirmation flow.
+2. Copy the new user's UUID from its Authentication user record.
+3. Open **Table Editor → private_owner** and insert one row with `user_id` equal to that UUID. Leave `singleton` as `true`. Only a trusted administrator may do this. Never grant clients write access to this table.
+4. In **Authentication → Sign In / Providers** (the precise section name can vary), disable **Allow new users to sign up**. Hiding registration in the application is not the same as disabling the public Auth sign-up API. Database owner checks still deny unapproved users even if the Auth sign-up API remains enabled.
+5. Open the app and sign in. No paid provider account is required for signing in, adding businesses or synchronizing training data.
 
-The Supabase client is initialized for the completed integration but is not used to upload training data. No public database tables or permissive RLS policies were created. No API secrets are accepted or stored in the browser. External cloud inference connectors are not implemented.
+Never share the password, service-role key or other secrets in chat. If administrative approval is done through this assistant instead, supply only the created user's email or UUID and explicitly request approval.
 
-From a phone, `localhost` refers to the phone, not the Windows host. Microphone access requires a secure context such as trusted HTTPS. An HTTPS preview may not be able to call an HTTP Ollama endpoint directly. A complete private-network deployment requires a properly secured local backend/proxy, trusted HTTPS, access controls and explicit firewall/origin rules. That backend and a Windows installer are **not included**. Do not expose Ollama directly to the public internet.
+## Hosting and phone access
 
-Typography is loaded from Google Fonts and the dashboard photo from Unsplash; these requests expose ordinary web-request metadata, not transcripts. They would need bundling locally for fully offline deployment.
+The source is ready to be hosted as a Vite SPA, but code verification is **not** proof that a public deployment exists.
 
-## Scoring
+1. Connect the repository to an HTTPS-capable static host, for example Vercel. Use its Vite preset, the package's production build task and output directory `dist`.
+2. Preserve SPA routing to `index.html` for direct links including `/prihlasenie`, `/auth/callback` and `/reset-password`. The repository's `vercel.json` contains the SPA rewrite.
+3. Under **Supabase Authentication → URL Configuration → Redirect URLs**, allow the actual published URLs ending in `/auth/callback` and `/reset-password`. Allow the current preview's equivalent URLs when testing there. Do not solve redirects by replacing Site URL with localhost.
+4. Authentication requests build absolute redirect URLs from the current application origin. For custom email templates, use the supplied `RedirectTo` rather than a fixed origin. Configure a reliable email sender before relying on production recovery mail; delivery and provider rate limits must be tested separately.
+5. Open the same published HTTPS address on the phone and computer, sign into the approved account and wait for **Synchronizované** before switching devices.
+6. On a trusted device, test sign-in, recovery, sign-out and direct page refresh. Test that an unapproved account cannot access the workspace.
 
-Rubric `sk-text-v1`: 0–20 absent/seriously flawed, 21–40 weak, 41–60 partial, 61–80 good, 81–100 excellent, null where the transcript does not support evaluation. Overall score is the rounded arithmetic mean of non-null category scores, not a separately invented model rating. Each scored category must include a literal substring of a recorded turn. Literal validation proves citation existence, not the correctness of the AI's interpretation.
+No deployment was created merely by implementing these files. Provider deployment configuration, a custom domain and production redirect allowlisting still require the actual chosen host/origin.
 
-No audio-based confidence, tone, talk/listen ratio, filler or silence measurements are reported. Customer outcomes are simulated, not real conversions. Comparable-call reporting matches intent, difficulty, rudeness, rubric and model; other scenario differences may still matter.
+### Voice and AI are separate from hosting
 
-The optional adjusted analytic is explicitly experimental: `clamp(raw + 2 * (difficulty - 5), 0, 100)`. This is a documented heuristic, **not empirically calibrated scoring**. Default analytics show raw scores. Mixed difficulty/model aggregates are labelled as such.
+Online storage does not make a Windows Ollama server reachable from a phone. `localhost` on a phone means the phone. Do not expose Ollama publicly. The existing connector intentionally accepts only loopback/private-network origins and may be blocked by HTTPS/HTTP, CORS or browser local-network restrictions.
 
-## Tests and verification
+A complete phone-ready AI call service requires a future server-side cloud inference connector and a verified Slovak speech pipeline. No API keys are accepted in the browser, no paid inference service is configured and no automatic paid processing is enabled. Browser speech remains an optional, explicit, per-device choice: speech recognition or synthesis can send audio to the browser/system provider. A Slovak language tag is not independent verification of voice quality.
 
-The package test task runs Vitest using `src/vitest.config.ts`. It covers empty-state data, actual save/load of test records, interrupted transcript persistence, corrupted JSON handling, average/null scoring, response schema validation, endpoint restrictions, provider model discovery and mocked failure/retry/malformed output. Test records are created only inside isolated tests and never loaded into production analytics. Production build runs the test suite first.
+## Synchronization, imports and data safety
 
-Real-browser end-to-end tests for microphone permission, Slovak voice quality, speech recognition, real Ollama conversations and mobile HTTPS have **not** been executed in this environment. Successful unit tests and compilation must not be described as verification of those flows.
+- Businesses, products, calls, transcripts, reports and the current coaching plan are synchronized after local changes. Pending changes are first saved to an account-specific browser draft.
+- Saves are batched, with a nominal two-second delay; clean devices check for remote changes approximately every 15 seconds and on focus/network events. This is polling, not a full realtime database subscription.
+- Device-only settings—including Ollama origin/model, speech consent, selected voice, theme and weekly goal—are not uploaded.
+- Original `trener-hovorov-v1` browser records are not automatically uploaded or deleted. Import them explicitly under **Nastavenia → Súkromný online účet**. The original origin/profile must be opened to find those records, or export JSON there and select that file on the new site.
+- JSON import validates records and requires explicit confirmation before adding them to the online draft. Existing IDs win; importing is not a destructive restore and does not overwrite an online copy of a record with the same ID.
+- Conflicts stop editing and automatic uploads. Export the device draft before choosing the online version. Review conflicting records separately; an exported older record with the same ID will not replace the newer online record through additive import.
+- A network failure leaves the draft in the browser. Initial offline loading requires retrying the server; this is not a full offline-first/PWA application.
+- Wait for server confirmation before closing the app. Mobile browsers can terminate tabs without delivering unload events; the local draft is the fallback, not a promise that an unsent edit is already on the other device.
+- Two actively editing devices can conflict at workspace level, even when editing different records. Use one active training device at a time. This implementation deliberately favors conflict detection over silent last-write-wins data loss.
+- Drafts are not encrypted in browser storage. Sign-out removes a verified clean draft; an unacknowledged draft is retained with a warning. Use a trusted browser profile. Clearing site data removes drafts and device preferences, not confirmed server records.
+- Deleting training data through Settings queues deletion of the live workspace content on all devices. This does not erase previous downloads, browser drafts on other devices or infrastructure backups under Supabase's retention policies.
+- Hosted database and authentication usage can incur provider charges or plan limits. No application session quota or subscription billing is implemented.
 
-## Remaining scope from the original specification
+## Scoring and model limitations
 
-- SQLite server persistence, migrations, secure local API and Windows deployment packaging.
-- Shared private-network database, single-user server access protection and HTTPS proxy deployment.
-- Fully local verified Slovak STT/TTS adapters, additional secure external providers, token/audio usage accounting and actual provider prices.
-- True streaming, automatic turn detection/barge-in, recordings, consented replay and audio measurements.
-- Document upload parsing/security and URL ingestion; current knowledge entry is plain text only.
-- Detailed configurable persona trait editors beyond current context and difficulty/rudeness inputs.
-- Full structured outcome flags, objection extraction, granular report sections and report version history.
-- Fully fixed benchmark template protocol, automatic spaced repetition scheduling, milestones/streak calendar and weekly review history.
-- All requested advanced analytics, moving averages and previous-period analysis.
-- JSON import/restore, retention automation, full browser E2E and real model/hardware evaluation.
+Rubric `sk-text-v1` assesses text evidence in 15 categories. Null categories are excluded from the overall rounded arithmetic mean. Every scored category must contain a literal citation from a saved turn. This proves citation existence, not the correctness of AI interpretation. Voice confidence, tone, interruption frequency, silence and talk/listen ratio are unavailable without reliable audio analysis.
 
-No claim is made that the entire original specification is finished or that voice quality has been verified.
+The optional adjusted analytic is explicitly experimental: `clamp(raw + 2 * (difficulty - 5), 0, 100)`. It is a documented heuristic, not empirical calibration. Simulated customer outcomes are not real conversion results. Model quality and latency on the target 14 GB RAM / 4 GB GPU computer remain unverified.
+
+The dashboard currently requests fonts from Google Fonts and a photo from Unsplash. These receive ordinary web-request metadata, not transcripts; assets would need local bundling for a fully offline site.
+
+## Tests
+
+The package test task runs Vitest with `src/vitest.config.ts`; production builds run the tests first. Tests cover scoring, schemas, local persistence, explicit import behavior, JSONB key ordering, per-account draft isolation, stale revisions, malformed responses, network retry, mounted synchronization state and auth/owner/recovery routing.
+
+Auth, component and workspace API tests use isolated mocks. They do not prove successful real-account login, recovery email delivery, synchronization across two physical devices or microphone/model operation. Separate database checks inspect grants and test denial of unapproved access without creating production test accounts or fake training records.
+
+## Remaining work
+
+- Publish to the selected HTTPS host, configure actual production callback URLs and activate the approved account.
+- Exercise real login, email recovery and two-device synchronization; keep a backup before importing valuable records.
+- Add cloud inference only after explicit provider/data-processing consent and transparent costs, with server-side secrets and authorization.
+- Verified Slovak STT/TTS, streaming/full-duplex audio, recordings/replay and audio-derived metrics.
+- Advanced persona editors, document/URL ingestion, fully structured outcome flags, detailed objection analysis, automatic spaced repetition and remaining advanced analytics.
+- The original Windows-local SQLite/server architecture is not included in this approved online PostgreSQL direction.
+
+Do not describe the entire original application scope, phone voice flow or production deployment as complete on the basis of compilation and mocked tests alone.

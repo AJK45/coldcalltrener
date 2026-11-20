@@ -37,6 +37,7 @@ export type Report = z.infer<typeof reportSchema>;
 export type Call = { id: string; created: string; duration: number; config: CallConfig; persona: Persona; businessName: string; productName: string; turns: Turn[]; status: 'active' | 'completed' | 'interrupted'; report?: Report; model: string; rubric: string; error?: string };
 export type Store = { businesses: Business[]; products: Product[]; calls: Call[]; settings: Settings; plan: { text: string; created: string; model: string } | null };
 const initial: Store = { businesses: [], products: [], calls: [], settings: { endpoint: 'http://localhost:11434', model: '', consentSpeech: false, voice: '', rate: 1, tested: false, testedModel: '', theme: 'dark', weeklyGoal: 3 }, plan: null };
+export function emptyStore(): Store { return structuredClone(initial); }
 const KEY = 'trener-hovorov-v1';
 export function loadStore(): Store { const saved = localStorage.getItem(KEY); if (!saved) return structuredClone(initial); try { const data = JSON.parse(saved); return { ...initial, ...data, settings: { ...initial.settings, ...data.settings } }; } catch { throw new Error('Lokálne dáta sa nepodarilo načítať. Nemažte úložisko; najprv si vytvorte zálohu.'); } }
 export function saveStore(store: Store) { localStorage.setItem(KEY, JSON.stringify(store)); }
