@@ -32,7 +32,16 @@ serve(async req => {
       signal: AbortSignal.timeout(120000),
     });
     if (!response.ok) {
-      console.warn('[trainer-ai] Provider rejected request', { status: response.status, model });
+      let providerMessage = '';
+      let providerStatus = '';
+      try {
+        const failure = await response.json();
+        if (typeof failure.error?.message === 'string') providerMessage = failure.error.message.split(key).join('[skrytý kľúč]').replace(/AIza[A-Za-z0-9_-]+/g, '[skrytý kľúč]').slice(0, 2000);
+        if (typeof failure.error?.status === 'string') providerStatus = failure.error.status.replace(/[^A-Z_]/g, '').slice(0, 80);
+      } catch { /* Google or an intermediary may return a non-JSON error page. */ }
+      // Do not log provider messages: they can quote private request content.
+      console.warn('[trainer-ai] Provider rejected request', { status: response.status, model, providerStatus });
+      const detail = providerMessage ? ` Google: ${providerMessage}` : ' Google neposkytol podrobnú JSON chybu.';
       if (response.status === 404) {
         let available: string[] = [];
         try {
@@ -45,10 +54,16 @@ serve(async req => {
             console.info('[trainer-ai] Available generation models', { models: available });
           } else console.warn('[trainer-ai] Model listing failed', { status: listing.status });
         } catch { console.warn('[trainer-ai] Model listing unavailable'); }
-        const choices = available.length ? ` Modely dostupné pre tento kľúč: ${available.slice(0, 20).join(', ')}.` : ' Zoznam dostupných modelov sa nepodarilo načítať; overte ho v Google AI Studio.';
-        return reply(502, { error: `Google nenašiel model ${model} (404). V Supabase → Edge Functions → Secrets nastavte GEMINI_MODEL na presný názov dostupného modelu.${choices} Pred výberom overte jeho bezplatnú kvótu a podporu štruktúrovaných JSON odpovedí. Aplikácia model automaticky nezmenila.` });
+        const listed = available.includes(model);
+        const explanation = listed
+          ? `Model ${model} je v zozname Google, ale generovanie vrátilo HTTP 404. Nejde teda o potvrdený neexistujúci názov modelu.`
+          : available.length
+            ? `Generovanie modelom ${model} vrátilo HTTP 404 a tento model nie je v načítanom zozname. Dostupné názvy: ${available.slice(0, 20).join(', ')}.`
+            : `Generovanie modelom ${model} vrátilo HTTP 404. Zoznam modelov sa nepodarilo overiť.`;
+        return reply(502, { error: `${explanation}${detail} Model ani fakturácia sa automaticky nezmenili.` });
       }
-      return reply(response.status === 429 ? 429 : 502, { error: response.status === 429 ? 'Gemini dosiahol limit požiadaviek alebo dostupnú kvótu. Počkajte a skúste znova; bezplatný limit nie je neobmedzený.' : response.status === 400 || response.status === 403 ? 'Google odmietol požiadavku. Skontrolujte platnosť kľúča, dostupnosť Gemini vo vašom regióne a nastavenie projektu v Google AI Studio.' : 'Gemini je momentálne nedostupný. Skúste to neskôr.' });
+      const explanation = response.status === 429 ? 'Gemini dosiahol limit požiadaviek alebo dostupnú kvótu. Bezplatný limit nie je neobmedzený.' : response.status === 400 || response.status === 403 ? 'Google odmietol požiadavku. Treba overiť podrobný dôvod, nie automaticky meniť model alebo zapínať fakturáciu.' : `Generovanie Gemini zlyhalo (HTTP ${response.status}).`;
+      return reply(response.status === 429 ? 429 : 502, { error: `${explanation}${detail}` });
     }
     const data = await response.json();
     const candidate = data.candidates?.[0];
