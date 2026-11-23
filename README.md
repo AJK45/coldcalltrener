@@ -34,7 +34,9 @@ Never share the password, service-role key or other secrets in chat. If administ
 
 ## Hosting and phone access
 
-The source is ready to be hosted as a Vite SPA, but code verification is **not** proof that a public deployment exists.
+**GitHub Pages:** follow [GITHUB_PAGES.md](GITHUB_PAGES.md). The included Actions workflow builds and deploys with the correct repository base, direct-route fallback and authentication return URLs. No Vercel or Cloudflare token is needed.
+
+The source is ready to be hosted as a Vite SPA, but code verification is **not** proof that a public deployment exists. For a different static host:
 
 1. Connect the repository to an HTTPS-capable static host, for example Vercel. Use its Vite preset, the package's production build task and output directory `dist`.
 2. Preserve SPA routing to `index.html` for direct links including `/prihlasenie`, `/auth/callback` and `/reset-password`. The repository's `vercel.json` contains the SPA rewrite.
