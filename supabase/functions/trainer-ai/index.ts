@@ -23,8 +23,8 @@ serve(async req => {
     let body;
     try { body = JSON.parse(raw); } catch { return reply(400, { error: 'Neplatná požiadavka.' }); }
     if (typeof body.system !== 'string' || !body.system || body.system.length > 30000 || typeof body.prompt !== 'string' || body.prompt.length > 180000 || !body.format || typeof body.format !== 'object' || Array.isArray(body.format) || JSON.stringify(body.format).length > 20000) return reply(400, { error: 'Neplatný alebo príliš dlhý kontext.' });
-    const model = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-2.5-flash';
-    if (!/^gemini-[a-zA-Z0-9.-]+$/.test(model)) return reply(503, { error: 'Serverové nastavenie GEMINI_MODEL musí obsahovať iba názov modelu, napríklad gemini-2.5-flash, nie URL.' });
+    const model = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-3.8-flash';
+    if (!/^gemini-[a-zA-Z0-9.-]+$/.test(model)) return reply(503, { error: 'Serverové nastavenie GEMINI_MODEL musí obsahovať iba názov modelu, napríklad gemini-3.8-flash, nie URL.' });
     console.info('[trainer-ai] Generating response', { model });
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },

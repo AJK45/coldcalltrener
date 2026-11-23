@@ -4,7 +4,7 @@ Private Slovak sales-practice application built with React, TypeScript, Vite, Ta
 
 ## Current delivery
 
-The application now uses **private email/password authentication and a synchronized Supabase PostgreSQL workspace**, replacing the original browser-only workspace. This is not the entire original production specification. Gemini 2.5 Flash is now the default AI connector; it requires a server-side GEMINI_API_KEY secret. A complete remote voice service remains unimplemented.
+The application now uses **private email/password authentication and a synchronized Supabase PostgreSQL workspace**, replacing the original browser-only workspace. This is not the entire original production specification. Gemini 3.8 Flash is now the default AI connector; it requires a server-side GEMINI_API_KEY secret. A complete remote voice service remains unimplemented.
 
 Implemented application features include business/product management, scenario setup and presets, the existing Ollama conversation connector, consented browser speech, microphone testing, transcript-based evidence-checked reports, history, analytics, coaching plans and JSON/CSV exports. Analytics contain no seeded calls or fabricated performance data.
 
@@ -49,7 +49,7 @@ No deployment was created merely by implementing these files. Provider deploymen
 
 ### Default online AI
 
-Gemini 2.5 Flash handles persona creation, customer replies, reports and coaching through the owner-authenticated `trainer-ai` Supabase Edge Function. Create a key in Google AI Studio and store it as `GEMINI_API_KEY` under Supabase → Edge Functions → Secrets. Never commit it or paste it into the frontend/chat. The function verifies the session and owner approval before sending business context and transcripts to Google. No key is currently configured. Free-tier eligibility, quotas, regional availability, data-use terms and any charges depend on the Google project; the app does not enable billing. A ChatGPT subscription cannot be reused as API access. Local Ollama remains optional in Settings.
+Gemini 3.8 Flash handles persona creation, customer replies, reports and coaching through the owner-authenticated `trainer-ai` Supabase Edge Function. Create a key in Google AI Studio and store it as `GEMINI_API_KEY` under Supabase → Edge Functions → Secrets. Never commit it or paste it into the frontend/chat. The function verifies the session and owner approval before sending business context and transcripts to Google. A key was configured during runtime troubleshooting; Gemini 2.5 Flash rejected generation for this new account and explicitly recommended gemini-3.8-flash. The default has been updated accordingly, but successful generation and free-tier eligibility for the replacement still require verification. An optional GEMINI_MODEL server secret overrides the default; remove a stale override or update it to gemini-3.8-flash. Free-tier eligibility, quotas, regional availability, data-use terms and any charges depend on the Google project; the app does not enable billing. A ChatGPT subscription cannot be reused as API access. Local Ollama remains optional in Settings.
 
 ### Voice and AI are separate from hosting
 

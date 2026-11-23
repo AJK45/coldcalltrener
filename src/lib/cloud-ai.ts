@@ -1,9 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Settings } from './trainer';
 
-export const CLOUD_MODEL = 'gemini-2.5-flash';
+export const CLOUD_MODEL = 'gemini-3.8-flash';
+export function isCloudModel(model: string): boolean {
+  return model === CLOUD_MODEL || model === 'gemini-2.5-flash';
+}
 export function usesCloudAI(settings: Settings): boolean {
-  return settings.provider === 'gemini' || (!settings.provider && (!settings.model || settings.model === CLOUD_MODEL));
+  return settings.provider === 'gemini' || (!settings.provider && (!settings.model || isCloudModel(settings.model)));
 }
 export function modelName(settings: Settings): string {
   return usesCloudAI(settings) ? CLOUD_MODEL : settings.model;

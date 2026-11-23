@@ -1,14 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { functions: { invoke } } }));
-import { CLOUD_MODEL, cloudGenerate, modelName, usesCloudAI } from './cloud-ai';
+import { CLOUD_MODEL, cloudGenerate, isCloudModel, modelName, usesCloudAI } from './cloud-ai';
 import { emptyStore, generate, customerSchema, customerFormat } from './trainer';
 
 beforeEach(() => invoke.mockReset());
 describe('Predvolený online model', () => {
   it('má Gemini prednastavený bez lokálneho servera', () => {
+    expect(CLOUD_MODEL).toBe('gemini-3.8-flash');
+    expect(emptyStore().settings.model).toBe(CLOUD_MODEL);
     expect(modelName(emptyStore().settings)).toBe(CLOUD_MODEL);
     expect(usesCloudAI({ ...emptyStore().settings, provider: undefined, model: '' })).toBe(true);
+  });
+  it('rozpozná nové aj historické Gemini hovory bez prepnutia na Ollamu', () => {
+    expect(isCloudModel('gemini-3.8-flash')).toBe(true);
+    expect(isCloudModel('gemini-2.5-flash')).toBe(true);
+    expect(isCloudModel('local-model')).toBe(false);
+    const legacy = { ...emptyStore().settings, provider: undefined, model: 'gemini-2.5-flash' };
+    expect(usesCloudAI(legacy)).toBe(true);
+    expect(modelName(legacy)).toBe('gemini-3.8-flash');
   });
   it('zachová starší zvolený lokálny model a explicitnú Ollamu', () => {
     expect(usesCloudAI({ ...emptyStore().settings, provider: undefined, model: 'local-model' })).toBe(false);
