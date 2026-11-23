@@ -26,7 +26,7 @@ GitHub Pages sends HTTP **404** for those initial nested-route requests even tho
 
 The published frontend and compiled public configuration are downloadable by anyone who can visit the site, even if its source repository is private. Training data remains protected by Supabase authentication and database policies; it must never be embedded in the static build. Keep credentials and exports out of the repository.
 
-GitHub Pages supplies HTTPS hosting, not AI inference or a backend. This deployment does not configure paid AI, expose local Ollama, or make a phone reach the computer's localhost. Existing voice consent and model limitations still apply. Supabase and GitHub plan limits remain separate from application functionality.
+GitHub Pages supplies HTTPS hosting, not AI inference or a backend. The default Gemini connector requires a GEMINI_API_KEY secret in Supabase; free-tier eligibility and any charges depend on your Google project. This deployment does not expose local Ollama or make a phone reach the computer's localhost. Existing voice consent and model limitations still apply. Supabase and GitHub plan limits remain separate from application functionality.
 
 Changing from a preview or another host gives the app a new browser origin. Sign in again; synchronized server records remain available. Local settings and unsent drafts do not move automatically. Wait for synchronization or export a backup from the old origin first.
 

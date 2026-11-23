@@ -49,6 +49,6 @@ export default function Login() {
     {(error || sessionError) && <p role="alert" className="mt-4 rounded-xl bg-destructive/10 p-3 text-xs text-destructive">{error || sessionError}</p>}
     {message && <p role="status" className="mt-4 rounded-xl bg-primary/10 p-3 text-xs leading-relaxed text-primary">{message}</p>}
     <button type="button" className="mt-5 text-xs text-primary hover:underline" onClick={() => { setForgot(!forgot); setError(''); setMessage(''); }}>{forgot ? 'Späť na prihlásenie' : 'Zabudli ste heslo?'}</button>
-    <div className="mt-8 border-t border-border pt-5 text-[10px] leading-relaxed text-muted-foreground">Registrácia nie je dostupná. Správca najprv vytvorí účet a schváli jeho prístup. Platené AI ani cloudové spracovanie hlasu nie sú zapnuté.</div>
+    <div className="mt-8 border-t border-border pt-5 text-[10px] leading-relaxed text-muted-foreground">Registrácia nie je dostupná. Správca najprv vytvorí účet a schváli jeho prístup. Online AI používa Gemini cez váš Google projekt. Hlasové služby vyžadujú samostatný súhlas.</div>
   </AuthFrame>;
 }

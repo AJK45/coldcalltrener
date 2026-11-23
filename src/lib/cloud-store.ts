@@ -42,7 +42,7 @@ export function parseImport(input: unknown): CloudData {
   const source = z.object({ businesses: z.array(z.unknown()), products: z.array(z.unknown()), calls: z.array(z.unknown()), plan: z.unknown().optional() }).parse(input);
   return cloudDataSchema.parse({ version: 1, ...source, plan: source.plan ?? null });
 }
-const draftSchema = z.object({ revision: z.number().int().nonnegative(), base: cloudDataSchema, data: cloudDataSchema, settings: z.object({ endpoint: text, model: text, consentSpeech: z.boolean(), voice: text, rate: z.number().min(0.6).max(1.4), tested: z.boolean(), testedModel: text, theme: z.enum(['dark', 'light']), weeklyGoal: z.number().int().min(1).max(50) }) }) as z.ZodType<Draft>;
+const draftSchema = z.object({ revision: z.number().int().nonnegative(), base: cloudDataSchema, data: cloudDataSchema, settings: z.object({ provider: z.enum(['gemini', 'ollama']).optional(), endpoint: text, model: text, consentSpeech: z.boolean(), voice: text, rate: z.number().min(0.6).max(1.4), tested: z.boolean(), testedModel: text, theme: z.enum(['dark', 'light']), weeklyGoal: z.number().int().min(1).max(50) }) }) as z.ZodType<Draft>;
 export const draftKey = (id: string) => `trener-online-draft-v1:${id}`;
 export function readDraft(id: string): Draft | null {
   const value = localStorage.getItem(draftKey(id));

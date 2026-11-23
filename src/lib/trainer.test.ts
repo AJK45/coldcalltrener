@@ -74,7 +74,7 @@ describe('Lokálny poskytovateľ a zlyhania', () => {
   it('pri chybe poskytovateľa nevymyslí úspešnú odpoveď a umožní nový pokus', async () => {
     const request = vi.fn().mockResolvedValueOnce(new Response('error', { status: 503 })).mockResolvedValueOnce(new Response(JSON.stringify({ message: { content: JSON.stringify({ text: 'Dobrý deň.', hangup: false }) } })));
     vi.stubGlobal('fetch', request);
-    const settings = { ...loadStore().settings, model: 'test-model' };
+    const settings = { ...loadStore().settings, provider: 'ollama' as const, model: 'test-model' };
     await expect(generate(settings, 'systém', 'otázka', customerSchema, customerFormat)).rejects.toThrow('503');
     expect(await generate(settings, 'systém', 'otázka', customerSchema, customerFormat)).toEqual({ text: 'Dobrý deň.', hangup: false });
     expect(request).toHaveBeenCalledTimes(2);

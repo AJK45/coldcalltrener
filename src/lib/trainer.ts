@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { cloudGenerate, usesCloudAI } from './cloud-ai';
 
 export const intents = ['Úplne studený hovor', 'Lead z kontaktného formulára', 'Lead z reklamy', 'Stiahnutý lead magnet', 'Spätný hovor', 'Nadviazanie na rozhovor', 'Po odoslaní ponuky', 'Dohodnutie konzultácie', 'Potvrdenie stretnutia', 'Prichádzajúci záujemca', 'Upsell existujúcemu zákazníkovi', 'Reaktivácia zákazníka', 'Otázka na cenu', 'Porovnávanie konkurencie', 'Uzavretie predaja', 'Vlastný scenár'];
 export const modes = ['Štandardný hovor', 'Tréning námietok', 'Úvod hovoru', 'Odhaľovanie potrieb', 'Uzavretie hovoru', 'Pod tlakom', 'Náhodný hovor', 'Adaptívny tréning', 'Opakovanie hovoru', 'Referenčný tréning'];
@@ -26,7 +27,7 @@ export const presets = [
 ] as const;
 export type Business = { id: string; name: string; industry: string; website: string; description: string; audience: string; usp: string; objections: string; proof: string; process: string; goal: string; knowledge: string };
 export type Product = { id: string; businessId: string; name: string; description: string; price: string; known: string; private: string };
-export type Settings = { endpoint: string; model: string; consentSpeech: boolean; voice: string; rate: number; tested: boolean; testedModel: string; theme: 'dark' | 'light'; weeklyGoal: number };
+export type Settings = { provider?: 'gemini' | 'ollama'; endpoint: string; model: string; consentSpeech: boolean; voice: string; rate: number; tested: boolean; testedModel: string; theme: 'dark' | 'light'; weeklyGoal: number };
 export type CallConfig = { businessId: string; productId: string; intent: string; mode: string; difficulty: number; rudeness: number; goal: string; context: string; preset: string };
 export const personaSchema = z.object({ name: z.string().min(2), role: z.string(), company: z.string(), background: z.string(), privatePersona: z.string(), opening: z.string() });
 export type Persona = z.infer<typeof personaSchema>;
@@ -36,7 +37,7 @@ export const reportSchema = z.object({ scores: z.array(scoreSchema).length(15), 
 export type Report = z.infer<typeof reportSchema>;
 export type Call = { id: string; created: string; duration: number; config: CallConfig; persona: Persona; businessName: string; productName: string; turns: Turn[]; status: 'active' | 'completed' | 'interrupted'; report?: Report; model: string; rubric: string; error?: string };
 export type Store = { businesses: Business[]; products: Product[]; calls: Call[]; settings: Settings; plan: { text: string; created: string; model: string } | null };
-const initial: Store = { businesses: [], products: [], calls: [], settings: { endpoint: 'http://localhost:11434', model: '', consentSpeech: false, voice: '', rate: 1, tested: false, testedModel: '', theme: 'dark', weeklyGoal: 3 }, plan: null };
+const initial: Store = { businesses: [], products: [], calls: [], settings: { provider: 'gemini', endpoint: 'http://localhost:11434', model: 'gemini-2.5-flash', consentSpeech: false, voice: '', rate: 1, tested: false, testedModel: '', theme: 'dark', weeklyGoal: 3 }, plan: null };
 export function emptyStore(): Store { return structuredClone(initial); }
 const KEY = 'trener-hovorov-v1';
 export function loadStore(): Store { const saved = localStorage.getItem(KEY); if (!saved) return structuredClone(initial); try { const data = JSON.parse(saved); return { ...initial, ...data, settings: { ...initial.settings, ...data.settings } }; } catch { throw new Error('Lokálne dáta sa nepodarilo načítať. Nemažte úložisko; najprv si vytvorte zálohu.'); } }
@@ -60,6 +61,12 @@ export async function models(settings: Settings) {
   catch { throw new Error('Server nevrátil platný zoznam modelov Ollama. Overte adresu a verziu servera.'); }
 }
 export async function generate<T>(settings: Settings, system: string, prompt: string, schema: z.ZodType<T>, format: object): Promise<T> {
+  if (usesCloudAI(settings)) {
+    const result = await cloudGenerate(system, prompt, format);
+    const parsed = schema.safeParse(result);
+    if (!parsed.success) throw new Error('Model nevrátil platnú štruktúru odpovede. Dáta zostali uložené; skúste požiadavku zopakovať.');
+    return parsed.data;
+  }
   if (!settings.model) throw new Error('Najprv vyberte model v nastaveniach.');
   const res = await requestLocal(`${validateEndpoint(settings.endpoint)}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: settings.model, stream: false, format, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }], options: { temperature: 0.6, num_ctx: 8192 } }), signal: AbortSignal.timeout(180000) });
   if (!res.ok) throw new Error(`Lokálny model vrátil chybu ${res.status}. Skontrolujte Ollama a dostupnú pamäť.`);

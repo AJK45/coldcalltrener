@@ -4,7 +4,7 @@ Private Slovak sales-practice application built with React, TypeScript, Vite, Ta
 
 ## Current delivery
 
-The application now uses **private email/password authentication and a synchronized Supabase PostgreSQL workspace**, replacing the original browser-only workspace. This is not the entire original production specification. Paid cloud AI and a complete remote voice service remain disabled/unimplemented.
+The application now uses **private email/password authentication and a synchronized Supabase PostgreSQL workspace**, replacing the original browser-only workspace. This is not the entire original production specification. Gemini 2.5 Flash is now the default AI connector; it requires a server-side GEMINI_API_KEY secret. A complete remote voice service remains unimplemented.
 
 Implemented application features include business/product management, scenario setup and presets, the existing Ollama conversation connector, consented browser speech, microphone testing, transcript-based evidence-checked reports, history, analytics, coaching plans and JSON/CSV exports. Analytics contain no seeded calls or fabricated performance data.
 
@@ -47,11 +47,15 @@ The source is ready to be hosted as a Vite SPA, but code verification is **not**
 
 No deployment was created merely by implementing these files. Provider deployment configuration, a custom domain and production redirect allowlisting still require the actual chosen host/origin.
 
+### Default online AI
+
+Gemini 2.5 Flash handles persona creation, customer replies, reports and coaching through the owner-authenticated `trainer-ai` Supabase Edge Function. Create a key in Google AI Studio and store it as `GEMINI_API_KEY` under Supabase → Edge Functions → Secrets. Never commit it or paste it into the frontend/chat. The function verifies the session and owner approval before sending business context and transcripts to Google. No key is currently configured. Free-tier eligibility, quotas, regional availability, data-use terms and any charges depend on the Google project; the app does not enable billing. A ChatGPT subscription cannot be reused as API access. Local Ollama remains optional in Settings.
+
 ### Voice and AI are separate from hosting
 
 Online storage does not make a Windows Ollama server reachable from a phone. `localhost` on a phone means the phone. Do not expose Ollama publicly. The existing connector intentionally accepts only loopback/private-network origins and may be blocked by HTTPS/HTTP, CORS or browser local-network restrictions.
 
-A complete phone-ready AI call service requires a future server-side cloud inference connector and a verified Slovak speech pipeline. No API keys are accepted in the browser, no paid inference service is configured and no automatic paid processing is enabled. Browser speech remains an optional, explicit, per-device choice: speech recognition or synthesis can send audio to the browser/system provider. A Slovak language tag is not independent verification of voice quality.
+Online text inference is now supported through Gemini after secret setup; a complete phone-ready voice service still requires a verified Slovak speech pipeline. No API keys are accepted in the browser. Browser speech remains an optional, explicit, per-device choice: speech recognition or synthesis can send audio to the browser/system provider. A Slovak language tag is not independent verification of voice quality.
 
 ## Synchronization, imports and data safety
 
@@ -86,7 +90,7 @@ Auth, component and workspace API tests use isolated mocks. They do not prove su
 
 - Publish to the selected HTTPS host, configure actual production callback URLs and activate the approved account.
 - Exercise real login, email recovery and two-device synchronization; keep a backup before importing valuable records.
-- Add cloud inference only after explicit provider/data-processing consent and transparent costs, with server-side secrets and authorization.
+- Configure the Gemini server secret and verify real provider responses, quotas and Slovak quality; the owner approved cloud processing, but no live AI request has been verified.
 - Verified Slovak STT/TTS, streaming/full-duplex audio, recordings/replay and audio-derived metrics.
 - Advanced persona editors, document/URL ingestion, fully structured outcome flags, detailed objection analysis, automatic spaced repetition and remaining advanced analytics.
 - The original Windows-local SQLite/server architecture is not included in this approved online PostgreSQL direction.
