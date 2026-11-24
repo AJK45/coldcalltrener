@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { requestGemini } from '../_shared/gemini-request.ts';
 
 const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 const reply = (status: number, body: object) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -26,7 +27,7 @@ serve(async req => {
     const model = Deno.env.get('GEMINI_MODEL')?.trim() || 'gemini-3.8-flash';
     if (!/^gemini-[a-zA-Z0-9.-]+$/.test(model)) return reply(503, { error: 'Serverové nastavenie GEMINI_MODEL musí obsahovať iba názov modelu, napríklad gemini-3.8-flash, nie URL.' });
     console.info('[trainer-ai] Generating response', { model });
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    const { response, attempts } = await requestGemini(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({ systemInstruction: { parts: [{ text: body.system }] }, contents: [{ role: 'user', parts: [{ text: body.prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 16384, responseMimeType: 'application/json', responseJsonSchema: body.format } }),
       signal: AbortSignal.timeout(120000),
@@ -61,6 +62,9 @@ serve(async req => {
             ? `Generovanie modelom ${model} vrátilo HTTP 404 a tento model nie je v načítanom zozname. Dostupné názvy: ${available.slice(0, 20).join(', ')}.`
             : `Generovanie modelom ${model} vrátilo HTTP 404. Zoznam modelov sa nepodarilo overiť.`;
         return reply(502, { error: `${explanation}${detail} Model ani fakturácia sa automaticky nezmenili.` });
+      }
+      if (response.status === 503) {
+        return reply(503, { error: `Google odmietol generovanie modelom ${model} aj po ${attempts} pokusoch (HTTP 503 / ${providerStatus || 'UNAVAILABLE'}). Automatické pokusy sa zastavili. Táto odpoveď nepotvrdzuje presnú príčinu ani čas obnovenia služby. Overte rovnaký model s krátkym neosobným textom priamo v Google AI Studio a stav služby Google. Model ani fakturácia sa nezmenili.${detail}` });
       }
       const explanation = response.status === 429 ? 'Gemini dosiahol limit požiadaviek alebo dostupnú kvótu. Bezplatný limit nie je neobmedzený.' : response.status === 400 || response.status === 403 ? 'Google odmietol požiadavku. Treba overiť podrobný dôvod, nie automaticky meniť model alebo zapínať fakturáciu.' : `Generovanie Gemini zlyhalo (HTTP ${response.status}).`;
       return reply(response.status === 429 ? 429 : 502, { error: `${explanation}${detail}` });
